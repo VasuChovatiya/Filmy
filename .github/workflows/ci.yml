@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      # No TMDB token here: Secrets.xcconfig is git-ignored, so the app builds with an empty token and
+      # the UI tests run on the offline demo catalog.
+      - name: Pick an iPhone simulator
+        run: |
+          xcodebuild -version
+          udid=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))] | last | .udid')
+          if [ -z "$udid" ] || [ "$udid" = "null" ]; then
+            echo "No available iPhone simulator" >&2
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "Using simulator $udid"
+          echo "DESTINATION=id=$udid" >> "$GITHUB_ENV"
+
+      - name: Build for testing
+        run: |
+          xcodebuild build-for-testing \
+            -project Filmy.xcodeproj -scheme Filmy \
+            -destination "$DESTINATION" \
+            -derivedDataPath DerivedData
+
+      - name: Unit tests
+        run: |
+          xcodebuild test-without-building \
+            -project Filmy.xcodeproj -scheme Filmy \
+            -destination "$DESTINATION" \
+            -derivedDataPath DerivedData \
+            -only-testing:FilmyTests
+
+      - name: UI smoke tests
+        run: |
+          xcodebuild test-without-building \
+            -project Filmy.xcodeproj -scheme Filmy \
+            -destination "$DESTINATION" \
+            -derivedDataPath DerivedData \
+            -only-testing:FilmyUITests/FilmyUITests \
+            -parallel-testing-enabled NO
