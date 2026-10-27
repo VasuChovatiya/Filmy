@@ -54,4 +54,5 @@ nonisolated enum TMDBImageSize: String, Sendable {
     case posterLarge = "w500"
     case backdrop = "w780"
     case profile = "w185"
+    case logo = "w92"
 }

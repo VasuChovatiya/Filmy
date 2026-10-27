@@ -34,8 +34,56 @@ nonisolated struct MovieDetailDTO: Decodable, Sendable {
     let voteAverage: Double?
     let voteCount: Int?
     let genres: [GenreDTO]
-    /// Present because requests use `append_to_response=credits`.
+    // The rest arrive through `append_to_response`.
     let credits: CreditsDTO?
+    let videos: VideoListDTO?
+    let recommendations: MoviePageDTO?
+    let watchProviders: WatchProvidersDTO?
+
+    /// Listed by hand only because "watch/providers" isn't a snake_case key. The decoder still
+    /// converts the others, so their raw values are the camelCase names.
+    enum CodingKeys: String, CodingKey {
+        case id, title, overview, tagline, posterPath, backdropPath, releaseDate, runtime
+        case voteAverage, voteCount, genres, credits, videos, recommendations
+        case watchProviders = "watch/providers"
+    }
+}
+
+nonisolated struct VideoListDTO: Decodable, Sendable {
+    let results: [VideoDTO]
+}
+
+nonisolated struct VideoDTO: Decodable, Sendable {
+    let key: String
+    let name: String
+    /// "YouTube" or "Vimeo".
+    let site: String
+    /// "Trailer", "Teaser", "Clip", "Featurette", "Behind the Scenes", "Bloopers"...
+    let type: String
+    let official: Bool?
+    let publishedAt: String?
+}
+
+nonisolated struct WatchProvidersDTO: Decodable, Sendable {
+    /// Keyed by ISO 3166-1 country code.
+    let results: [String: RegionProvidersDTO]
+}
+
+nonisolated struct RegionProvidersDTO: Decodable, Sendable {
+    /// TMDB's watch page for the region, which links out to each service.
+    let link: String?
+    let flatrate: [ProviderDTO]?
+    let free: [ProviderDTO]?
+    let ads: [ProviderDTO]?
+    let rent: [ProviderDTO]?
+    let buy: [ProviderDTO]?
+}
+
+nonisolated struct ProviderDTO: Decodable, Sendable {
+    let providerId: Int
+    let providerName: String
+    let logoPath: String?
+    let displayPriority: Int?
 }
 
 nonisolated struct GenreDTO: Decodable, Sendable {

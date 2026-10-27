@@ -35,6 +35,16 @@ nonisolated struct MovieDetail: Hashable, Sendable {
     let runtimeMinutes: Int?
     let genres: [String]
     let cast: [CastMember]
+    /// YouTube trailers, teasers and clips, best first.
+    var videos: [Video] = []
+    var recommendations: [Movie] = []
+    /// Nil when no service offers the movie in the user's region.
+    var watchOptions: WatchOptions?
+
+    /// The video the "Play Trailer" button opens.
+    var trailer: Video? {
+        videos.first { $0.kind == .trailer || $0.kind == .teaser }
+    }
 
     /// "2h 15m", "48m", or nil when TMDB has no runtime yet.
     var formattedRuntime: String? {
@@ -58,6 +68,78 @@ nonisolated struct CastMember: Identifiable, Hashable, Sendable {
 
     var profileURL: URL? {
         TMDBConfiguration.imageURL(path: profilePath, size: .profile)
+    }
+}
+
+nonisolated struct Video: Identifiable, Hashable, Sendable {
+    enum Kind: Int, Comparable, Sendable {
+        // Raw values order the strip: trailers first.
+        case trailer, teaser, clip, featurette, behindTheScenes, other
+
+        init(tmdbType: String) {
+            switch tmdbType {
+            case "Trailer": self = .trailer
+            case "Teaser": self = .teaser
+            case "Clip": self = .clip
+            case "Featurette": self = .featurette
+            case "Behind the Scenes": self = .behindTheScenes
+            default: self = .other
+            }
+        }
+
+        static func < (lhs: Kind, rhs: Kind) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+
+        var title: LocalizedStringResource {
+            switch self {
+            case .trailer: "Trailer"
+            case .teaser: "Teaser"
+            case .clip: "Clip"
+            case .featurette: "Featurette"
+            case .behindTheScenes: "Behind the Scenes"
+            case .other: "Video"
+            }
+        }
+    }
+
+    /// The YouTube video id.
+    let id: String
+    let name: String
+    let kind: Kind
+    let isOfficial: Bool
+
+    var watchURL: URL {
+        URL(string: "https://www.youtube.com/watch?v=\(id)")!
+    }
+
+    var thumbnailURL: URL {
+        URL(string: "https://i.ytimg.com/vi/\(id)/hqdefault.jpg")!
+    }
+}
+
+/// Where the movie can be watched in one region, from TMDB's JustWatch data.
+nonisolated struct WatchOptions: Hashable, Sendable {
+    let region: String
+    /// TMDB's watch page, which links out to each service. TMDB has no per-service deep links.
+    let link: URL?
+    /// Subscription, free and ad-supported services.
+    let stream: [WatchProvider]
+    let rent: [WatchProvider]
+    let buy: [WatchProvider]
+
+    var isEmpty: Bool {
+        stream.isEmpty && rent.isEmpty && buy.isEmpty
+    }
+}
+
+nonisolated struct WatchProvider: Identifiable, Hashable, Sendable {
+    let id: Int
+    let name: String
+    let logoPath: String?
+
+    var logoURL: URL? {
+        TMDBConfiguration.imageURL(path: logoPath, size: .logo)
     }
 }
 

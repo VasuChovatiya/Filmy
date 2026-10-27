@@ -79,11 +79,16 @@ nonisolated struct DemoTransport: HTTPTransport {
                 "order": index,
             ]
         }
+        // Fictional films have no real trailers or streaming deals, so those stay empty.
+        let related = DemoCatalog.movies.filter { $0.id != movie.id && !Set($0.genres).isDisjoint(with: movie.genres) }
         return summaryJSON(movie).merging([
             "tagline": movie.tagline,
             "runtime": movie.runtime,
             "genres": movie.genres.enumerated().map { ["id": $0.offset, "name": $0.element] },
             "credits": ["cast": cast],
+            "videos": ["results": [Any]()],
+            "recommendations": pageJSON(related, page: 1),
+            "watch/providers": ["results": [String: Any]()],
         ]) { _, new in new }
     }
 }

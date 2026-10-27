@@ -4,12 +4,17 @@ import SwiftUI
 struct MovieDetailView: View {
     /// Includes the status and navigation bar area, since the banner runs behind them.
     private static let backdropHeight: CGFloat = 340
+    private static let regularBackdropHeight: CGFloat = 480
+    /// Keeps text at a readable line length on iPad; the banner still runs edge to edge.
+    private static let maxContentWidth: CGFloat = 720
 
     @State private var viewModel: MovieDetailViewModel
     @State private var isFavorite = false
     /// The bar stays transparent over the banner and fills in once the banner scrolls under it.
     @State private var isPastBanner = false
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(movie: Movie, repository: any MovieRepository) {
         _viewModel = State(initialValue: MovieDetailViewModel(movie: movie, repository: repository))
@@ -20,8 +25,11 @@ struct MovieDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.l) {
                 header(movie)
-                details(movie)
-                    .padding(.horizontal, Spacing.m)
+                VStack(alignment: .leading, spacing: Spacing.l) {
+                    details(movie)
+                }
+                .padding(.horizontal, Spacing.m)
+                .readableWidth(Self.maxContentWidth)
             }
             .padding(.bottom, Spacing.xl)
         }
@@ -57,23 +65,30 @@ struct MovieDetailView: View {
 
     private func header(_ movie: Movie) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            StretchyBackdrop(movie: movie, height: Self.backdropHeight) { collapsed in
+            StretchyBackdrop(movie: movie, height: horizontalSizeClass == .regular ? Self.regularBackdropHeight : Self.backdropHeight) { collapsed in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isPastBanner = collapsed
                 }
             }
+            .accessibilityHidden(true)
 
-            HStack(alignment: .bottom, spacing: Spacing.m) {
+            // At accessibility text sizes the title gets the full width under the poster.
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.m))
+                : AnyLayout(HStackLayout(alignment: .bottom, spacing: Spacing.m))
+            layout {
                 PosterImage(movie: movie)
-                    .frame(width: 110)
+                    .frame(width: horizontalSizeClass == .regular ? 150 : 110)
                     .shadow(color: .black.opacity(0.5), radius: 12, y: 6)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text(movie.title)
                         .font(.filmyTitle)
                         .foregroundStyle(.white)
-                        .lineLimit(3)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 3)
                         .minimumScaleFactor(0.8)
+                        .accessibilityAddTraits(.isHeader)
                     if let metadata = metadata(movie) {
                         Text(metadata)
                             .font(.subheadline)
@@ -87,6 +102,7 @@ struct MovieDetailView: View {
             }
             .padding(.horizontal, Spacing.m)
             .padding(.top, -72)
+            .readableWidth(Self.maxContentWidth)
         }
     }
 
@@ -100,6 +116,9 @@ struct MovieDetailView: View {
             }
             if !detail.genres.isEmpty {
                 GenreChips(genres: detail.genres)
+            }
+            if let trailer = detail.trailer {
+                TrailerButton(trailer: trailer)
             }
         }
 
@@ -133,6 +152,26 @@ struct MovieDetailView: View {
             if !detail.cast.isEmpty {
                 DetailSection("Cast") {
                     CastStrip(cast: detail.cast)
+                        .padding(.horizontal, -Spacing.m)
+                }
+                .transition(.opacity)
+            }
+            if !detail.videos.isEmpty {
+                DetailSection("Videos") {
+                    VideoStrip(videos: detail.videos)
+                        .padding(.horizontal, -Spacing.m)
+                }
+                .transition(.opacity)
+            }
+            if let options = detail.watchOptions {
+                DetailSection("Where to Watch") {
+                    WatchOptionsView(options: options)
+                }
+                .transition(.opacity)
+            }
+            if !detail.recommendations.isEmpty {
+                DetailSection("More Like This") {
+                    RecommendationStrip(movies: detail.recommendations)
                         .padding(.horizontal, -Spacing.m)
                 }
                 .transition(.opacity)
@@ -199,7 +238,168 @@ private struct DetailSection<Content: View>: View {
             Text(title)
                 .font(.filmySectionTitle)
                 .foregroundStyle(.white)
+                .accessibilityAddTraits(.isHeader)
             content
+        }
+    }
+}
+
+private struct TrailerButton: View {
+    let trailer: Video
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        Button {
+            openURL(trailer.watchURL)
+        } label: {
+            Label("Play Trailer", systemImage: "play.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.black)
+                .padding(.horizontal, Spacing.m)
+                .padding(.vertical, Spacing.xs)
+                .background(Color.filmyAccent, in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(Text("Opens \(trailer.name) on YouTube"))
+    }
+}
+
+/// YouTube thumbnails; tapping one opens it in the YouTube app or Safari.
+private struct VideoStrip: View {
+    let videos: [Video]
+    @ScaledMetric(relativeTo: .footnote) private var cardWidth: CGFloat = 220
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            LazyHStack(alignment: .top, spacing: Spacing.s) {
+                ForEach(videos) { video in
+                    Link(destination: video.watchURL) {
+                        VStack(alignment: .leading, spacing: Spacing.xxs) {
+                            Color.clear
+                                .aspectRatio(16 / 9, contentMode: .fit)
+                                .overlay {
+                                    RemoteImage(url: video.thumbnailURL) { Color.filmySurfaceRaised }
+                                }
+                                .overlay {
+                                    Image(systemName: "play.circle.fill")
+                                        .font(.system(size: 40))
+                                        .symbolRenderingMode(.palette)
+                                        .foregroundStyle(.white, .black.opacity(0.45))
+                                }
+                                .clipShape(RoundedRectangle(cornerRadius: Radius.s, style: .continuous))
+                                .padding(.bottom, Spacing.xxs)
+
+                            Text(video.name)
+                                .font(.filmyCardTitle)
+                                .foregroundStyle(.white)
+                                .lineLimit(2)
+                            Text(video.kind.title)
+                                .font(.filmyCaption)
+                                .foregroundStyle(Color.filmySecondaryText)
+                        }
+                        .frame(width: cardWidth, alignment: .leading)
+                        .multilineTextAlignment(.leading)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text("\(video.name), \(video.kind.title)"))
+                    .accessibilityHint(Text("Opens on YouTube"))
+                    .accessibilityAddTraits(.isLink)
+                }
+            }
+            .padding(.horizontal, Spacing.m)
+        }
+    }
+}
+
+/// Streaming, rental and purchase services for the user's region. TMDB only offers a link to its
+/// own watch page, so the whole section opens that.
+private struct WatchOptionsView: View {
+    let options: WatchOptions
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.s) {
+            group("Stream", options.stream)
+            group("Rent", options.rent)
+            group("Buy", options.buy)
+
+            HStack(spacing: Spacing.xs) {
+                if let link = options.link {
+                    Link(destination: link) {
+                        Label("All Options", systemImage: "arrow.up.right.square")
+                            .font(.footnote.weight(.semibold))
+                    }
+                }
+                Spacer(minLength: Spacing.s)
+                // TMDB's terms require crediting JustWatch for this data.
+                Text("Data from JustWatch · \(regionName)")
+                    .font(.caption2)
+                    .foregroundStyle(Color.filmyTertiaryText)
+                    .multilineTextAlignment(.trailing)
+            }
+        }
+    }
+
+    private var regionName: String {
+        Locale.current.localizedString(forRegionCode: options.region) ?? options.region
+    }
+
+    @ViewBuilder
+    private func group(_ title: LocalizedStringKey, _ providers: [WatchProvider]) -> some View {
+        if !providers.isEmpty {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text(title)
+                    .font(.filmyCaption.weight(.semibold))
+                    .foregroundStyle(Color.filmySecondaryText)
+                    .textCase(.uppercase)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Spacing.xs) {
+                        ForEach(providers) { provider in
+                            RemoteImage(url: provider.logoURL) {
+                                ZStack {
+                                    Color.filmySurfaceRaised
+                                    Text(provider.name.prefix(1))
+                                        .font(.headline)
+                                        .foregroundStyle(Color.filmySecondaryText)
+                                }
+                            }
+                            .frame(width: 44, height: 44)
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.s, style: .continuous))
+                            .accessibilityLabel(Text(provider.name))
+                        }
+                    }
+                }
+                .scrollClipDisabled()
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+}
+
+/// Wraps a recommended movie so pushing it uses a plain push: the zoom needs a source poster in the
+/// tab's grid, and the recommendation strip isn't in that namespace.
+nonisolated struct RelatedMovie: Hashable {
+    let movie: Movie
+}
+
+private struct RecommendationStrip: View {
+    let movies: [Movie]
+    @ScaledMetric(relativeTo: .footnote) private var cardWidth: CGFloat = 110
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            LazyHStack(alignment: .top, spacing: Spacing.s) {
+                ForEach(movies) { movie in
+                    NavigationLink(value: RelatedMovie(movie: movie)) {
+                        PosterCard(movie: movie)
+                            .frame(width: cardWidth)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("related-card")
+                }
+            }
+            .padding(.horizontal, Spacing.m)
+            .padding(.bottom, Spacing.xs)
         }
     }
 }
@@ -226,6 +426,7 @@ private struct GenreChips: View {
 
 private struct CastStrip: View {
     let cast: [CastMember]
+    @ScaledMetric(relativeTo: .footnote) private var cardWidth: CGFloat = 84
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -256,7 +457,7 @@ private struct CastStrip: View {
                         }
                     }
                     .multilineTextAlignment(.center)
-                    .frame(width: 84)
+                    .frame(width: cardWidth)
                     .accessibilityElement(children: .combine)
                 }
             }
@@ -272,16 +473,26 @@ private struct MovieDestinationModifier: ViewModifier {
     @Environment(\.dependencies) private var dependencies
 
     func body(content: Content) -> some View {
-        content.navigationDestination(for: Movie.self) { movie in
-            MovieDetailView(movie: movie, repository: dependencies.repository)
-                .heroDestination(id: movie.id, in: hero)
-        }
+        content
+            .navigationDestination(for: Movie.self) { movie in
+                MovieDetailView(movie: movie, repository: dependencies.repository)
+                    .heroDestination(id: movie.id, in: hero)
+            }
+            .navigationDestination(for: RelatedMovie.self) { related in
+                MovieDetailView(movie: related.movie, repository: dependencies.repository)
+            }
     }
 }
 
 extension View {
     func movieDestination(hero: Namespace.ID) -> some View {
         modifier(MovieDestinationModifier(hero: hero))
+    }
+
+    /// Caps the width and centres the view, for iPad and other wide windows.
+    func readableWidth(_ maxWidth: CGFloat) -> some View {
+        frame(maxWidth: maxWidth, alignment: .leading)
+            .frame(maxWidth: .infinity)
     }
 
     /// iOS 26 dims content under the nav bar even when its background is hidden, which would

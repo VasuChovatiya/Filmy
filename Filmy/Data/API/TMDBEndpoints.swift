@@ -15,6 +15,7 @@ nonisolated enum TMDBEndpoints {
     }
 
     static func detail(id: Int) -> Endpoint<MovieDetailDTO> {
-        .get("/movie/\(id)", query: ["append_to_response": "credits"])
+        // One request for the whole detail screen.
+        .get("/movie/\(id)", query: ["append_to_response": "credits,videos,recommendations,watch/providers"])
     }
 }

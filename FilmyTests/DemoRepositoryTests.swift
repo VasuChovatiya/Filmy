@@ -33,6 +33,23 @@ struct DemoRepositoryTests {
         #expect(detail.genres.contains("Science Fiction"))
     }
 
+    @Test func detailRecommendsMoviesThatShareAGenre() async throws {
+        let detail = try await repository.movieDetail(id: 103)
+
+        #expect(!detail.recommendations.isEmpty)
+        #expect(!detail.recommendations.contains { $0.id == 103 })
+        for recommended in detail.recommendations {
+            let genres = try #require(DemoCatalog.movie(id: recommended.id)).genres
+            #expect(!Set(genres).isDisjoint(with: detail.genres))
+        }
+    }
+
+    @Test func detailRequestAsksForEveryExtraInOneCall() {
+        let query = TMDBEndpoints.detail(id: 1).queryItems.first { $0.name == "append_to_response" }?.value
+
+        #expect(query == "credits,videos,recommendations,watch/providers")
+    }
+
     @Test func unknownMovieIsNotFound() async {
         await #expect(throws: NetworkError.self) {
             try await repository.movieDetail(id: 999_999)

@@ -57,7 +57,7 @@ struct MovieMapperTests {
         """
         let dto = try Self.decode(MovieDetailDTO.self, json)
 
-        let detail = MovieMapper.detail(from: dto)
+        let detail = MovieMapper.detail(from: dto, region: "US")
 
         #expect(detail.cast.count == MovieMapper.maxCast)
         #expect(detail.cast.first?.name == "Actor 0")
