@@ -31,10 +31,13 @@ struct RatingBadge: View {
 /// Grid cell: poster, rating, title and year.
 struct PosterCard: View {
     let movie: Movie
+    /// Set to zoom the detail screen out of this poster.
+    var heroNamespace: Namespace.ID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
             PosterImage(movie: movie)
+                .heroSource(id: movie.id, in: heroNamespace)
                 .overlay(alignment: .topTrailing) {
                     if movie.hasRating {
                         RatingBadge(rating: movie.rating)
@@ -61,11 +64,13 @@ struct PosterCard: View {
 /// List row used by Search: thumbnail, title, year, rating and a two-line overview.
 struct MovieRow: View {
     let movie: Movie
+    var heroNamespace: Namespace.ID?
 
     var body: some View {
         HStack(alignment: .top, spacing: Spacing.s) {
             PosterImage(movie: movie, size: .thumbnail, cornerRadius: Radius.s)
                 .frame(width: 64)
+                .heroSource(id: movie.id, in: heroNamespace, cornerRadius: Radius.s)
 
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(movie.title)

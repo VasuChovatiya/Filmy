@@ -1,0 +1,8 @@
+// Build settings for the Filmy app target.
+//
+// Live TMDB data: copy Secrets.example.xcconfig to Secrets.xcconfig (git-ignored) and paste your
+// TMDB "API Read Access Token" into it. Without it the app runs on the offline demo catalogue.
+
+TMDB_ACCESS_TOKEN =
+
+#include? "Secrets.xcconfig"
