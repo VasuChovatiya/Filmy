@@ -10,7 +10,7 @@ nonisolated struct AppDependencies: Sendable {
     let isDemoMode: Bool
 
     static func live(bundle: Bundle = .main) -> AppDependencies {
-        let token = TMDBConfiguration.accessToken(in: bundle)
+        let token = LaunchArguments.usesDemoData ? nil : TMDBConfiguration.accessToken(in: bundle)
         let transport: any HTTPTransport = token == nil ? DemoTransport() : URLSession.shared
         return AppDependencies(
             repository: TMDBMovieRepository(client: TMDBConfiguration.makeClient(token: token, transport: transport)),
@@ -25,6 +25,15 @@ nonisolated struct AppDependencies: Sendable {
         images: .shared,
         isDemoMode: true
     )
+}
+
+/// Switches the UI tests pass so they don't depend on the network or on favorites left by an earlier run.
+nonisolated enum LaunchArguments {
+    static let demoData = "-UITestDemoData"
+    static let inMemoryStore = "-UITestInMemoryStore"
+
+    static var usesDemoData: Bool { ProcessInfo.processInfo.arguments.contains(demoData) }
+    static var usesInMemoryStore: Bool { ProcessInfo.processInfo.arguments.contains(inMemoryStore) }
 }
 
 extension EnvironmentValues {

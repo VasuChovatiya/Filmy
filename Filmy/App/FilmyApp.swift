@@ -15,6 +15,6 @@ struct FilmyApp: App {
                     await dependencies.images.trimDiskCache()
                 }
         }
-        .modelContainer(for: FavoriteMovie.self)
+        .modelContainer(for: FavoriteMovie.self, inMemory: LaunchArguments.usesInMemoryStore)
     }
 }

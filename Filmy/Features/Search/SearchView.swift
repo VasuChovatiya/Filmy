@@ -53,6 +53,7 @@ struct SearchView: View {
                 NavigationLink(value: movie) {
                     MovieRow(movie: movie, heroNamespace: hero)
                 }
+                .accessibilityIdentifier("search-result")
                 .listRowBackground(Color.clear)
                 .listRowSeparatorTint(.white.opacity(0.08))
                 .onAppear {
