@@ -28,11 +28,23 @@ struct RatingBadge: View {
     }
 }
 
+extension Movie {
+    /// "Dune: Part Two, 2024, rated 8.2 out of 10": what VoiceOver reads for a card or row.
+    var accessibilitySummary: Text {
+        let year = releaseYear ?? String(localized: "release date to be announced")
+        if hasRating {
+            return Text("\(title), \(year), rated \(rating, format: .number.precision(.fractionLength(1))) out of 10")
+        }
+        return Text("\(title), \(year)")
+    }
+}
+
 /// Grid cell: poster, rating, title and year.
 struct PosterCard: View {
     let movie: Movie
     /// Set to zoom the detail screen out of this poster.
     var heroNamespace: Namespace.ID?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
@@ -42,6 +54,8 @@ struct PosterCard: View {
                     if movie.hasRating {
                         RatingBadge(rating: movie.rating)
                             .padding(6)
+                            // It sits on the artwork, so it stops growing before it covers it.
+                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     }
                 }
                 .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
@@ -50,14 +64,15 @@ struct PosterCard: View {
                 Text(movie.title)
                     .font(.filmyCardTitle)
                     .foregroundStyle(.white)
-                    .lineLimit(1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 1)
                 Text(movie.releaseYear ?? String(localized: "TBA"))
                     .font(.filmyCaption)
                     .foregroundStyle(Color.filmySecondaryText)
             }
         }
         .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(movie.accessibilitySummary)
     }
 }
 
@@ -65,8 +80,14 @@ struct PosterCard: View {
 struct MovieRow: View {
     let movie: Movie
     var heroNamespace: Namespace.ID?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        // The text column is narrow, so at accessibility sizes year and rating stack instead.
+        let metadataLayout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.xxs))
+            : AnyLayout(HStackLayout(spacing: Spacing.xs))
+
         HStack(alignment: .top, spacing: Spacing.s) {
             PosterImage(movie: movie, size: .thumbnail, cornerRadius: Radius.s)
                 .frame(width: 64)
@@ -76,8 +97,8 @@ struct MovieRow: View {
                 Text(movie.title)
                     .font(.headline)
                     .foregroundStyle(.white)
-                    .lineLimit(2)
-                HStack(spacing: Spacing.xs) {
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 4 : 2)
+                metadataLayout {
                     Text(movie.releaseYear ?? String(localized: "TBA"))
                     if movie.hasRating {
                         Label {
@@ -86,6 +107,7 @@ struct MovieRow: View {
                             Image(systemName: "star.fill").foregroundStyle(Color.ratingMid)
                         }
                         .labelStyle(.titleAndIcon)
+                        .fixedSize()
                     }
                 }
                 .font(.filmyCaption)
@@ -103,7 +125,10 @@ struct MovieRow: View {
         }
         .padding(.vertical, Spacing.xxs)
         .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(movie.accessibilitySummary)
+        // Read on request (VoiceOver "More Content" rotor) rather than on every row.
+        .accessibilityCustomContent("Overview", movie.overview)
     }
 }
 

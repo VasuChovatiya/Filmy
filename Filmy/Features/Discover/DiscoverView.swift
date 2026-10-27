@@ -62,19 +62,40 @@ struct DiscoverView: View {
 }
 
 enum PosterGridLayout {
-    static let columns = [GridItem(.adaptive(minimum: 104, maximum: 180), spacing: Spacing.m, alignment: .top)]
+    /// Larger cells on iPad, and fewer, wider ones at accessibility text sizes so titles fit.
+    static func columns(sizeClass: UserInterfaceSizeClass?, dynamicTypeSize: DynamicTypeSize) -> [GridItem] {
+        let minimum: CGFloat = dynamicTypeSize.isAccessibilitySize ? 150 : (sizeClass == .regular ? 150 : 104)
+        return [GridItem(.adaptive(minimum: minimum, maximum: minimum * 1.6), spacing: Spacing.m, alignment: .top)]
+    }
+}
+
+/// Reads the environment `PosterGridLayout` depends on.
+struct AdaptivePosterColumns<Content: View>: View {
+    @ViewBuilder var content: ([GridItem]) -> Content
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        content(PosterGridLayout.columns(sizeClass: sizeClass, dynamicTypeSize: dynamicTypeSize))
+    }
 }
 
 /// One list's grid: skeleton while page 1 loads, an error with retry, or posters with a paging footer.
 struct MovieListGrid: View {
     let viewModel: MovieListViewModel
     let hero: Namespace.ID
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var columns: [GridItem] {
+        PosterGridLayout.columns(sizeClass: sizeClass, dynamicTypeSize: dynamicTypeSize)
+    }
 
     var body: some View {
         Group {
             switch viewModel.phase {
             case .idle, .loading:
-                SkeletonPosterGrid(columns: PosterGridLayout.columns)
+                SkeletonPosterGrid(columns: columns)
             case .failed(let message):
                 ContentUnavailableView {
                     Label("Couldn't Load Movies", systemImage: "wifi.exclamationmark")
@@ -88,12 +109,13 @@ struct MovieListGrid: View {
                 }
                 .padding(.top, Spacing.xxl)
             case .loaded:
-                LazyVGrid(columns: PosterGridLayout.columns, spacing: Spacing.l) {
+                LazyVGrid(columns: columns, spacing: Spacing.l) {
                     ForEach(viewModel.movies) { movie in
                         NavigationLink(value: movie) {
                             PosterCard(movie: movie, heroNamespace: hero)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier("movie-card")
                         // Not `.task`: scrolling the cell away would cancel the page request.
                         .onAppear {
                             Task { await viewModel.loadMoreIfNeeded(after: movie) }

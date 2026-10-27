@@ -17,13 +17,16 @@ struct FavoritesView: View {
                     )
                 } else {
                     ScrollView {
-                        LazyVGrid(columns: PosterGridLayout.columns, spacing: Spacing.l) {
-                            ForEach(favorites) { favorite in
-                                NavigationLink(value: favorite.movie) {
-                                    PosterCard(movie: favorite.movie, heroNamespace: hero)
+                        AdaptivePosterColumns { columns in
+                            LazyVGrid(columns: columns, spacing: Spacing.l) {
+                                ForEach(favorites) { favorite in
+                                    NavigationLink(value: favorite.movie) {
+                                        PosterCard(movie: favorite.movie, heroNamespace: hero)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("favorite-card")
+                                    .transition(.scale(scale: 0.9).combined(with: .opacity))
                                 }
-                                .buttonStyle(.plain)
-                                .transition(.scale(scale: 0.9).combined(with: .opacity))
                             }
                         }
                         .padding(.horizontal, Spacing.m)
