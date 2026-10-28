@@ -1,6 +1,7 @@
 # Filmy
 
 [![CI](https://github.com/VasuChovatiya/Filmy/actions/workflows/ci.yml/badge.svg)](https://github.com/VasuChovatiya/Filmy/actions/workflows/ci.yml)
+[![SwiftLint](https://img.shields.io/badge/code_style-SwiftLint-F05138?logo=swift&logoColor=white)](.swiftlint.yml)
 
 A SwiftUI movie browser built on [The Movie Database (TMDB)](https://www.themoviedb.org) API. Browse
 trending and popular films, search the catalog, open a film's details, watch its trailer, see where to
