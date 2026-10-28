@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/realm/swiftlint:0.65.1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: SwiftLint
         run: swiftlint lint --strict --reporter github-actions-logging
 
@@ -24,7 +24,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # No TMDB token here: Secrets.xcconfig is git-ignored, so the app builds with an empty token and
       # the UI tests run on the offline demo catalog.
