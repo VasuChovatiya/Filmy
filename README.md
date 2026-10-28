@@ -111,3 +111,7 @@ request.
 
 This product uses the TMDB API but is not endorsed or certified by TMDB. Streaming availability
 data is provided by [JustWatch](https://www.justwatch.com).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
