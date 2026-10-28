@@ -15,6 +15,8 @@ nonisolated struct DemoMovie: Sendable {
     let popularity: Int
 }
 
+// One film per line reads better than wrapped fixture data.
+// swiftlint:disable line_length
 nonisolated enum DemoCatalog {
     static let movies: [DemoMovie] = [
         DemoMovie(id: 101, title: "Monsoon Signal", tagline: "Some storms carry messages.", overview: "A radio operator in a coastal Kerala town starts picking up transmissions that predict each night's weather with impossible accuracy, and then begin predicting people.", releaseDate: "2026-07-18", rating: 8.1, voteCount: 2140, runtime: 128, genres: ["Mystery", "Drama"], popularity: 98),
@@ -79,3 +81,4 @@ nonisolated enum DemoCatalog {
         }
     }
 }
+// swiftlint:enable line_length

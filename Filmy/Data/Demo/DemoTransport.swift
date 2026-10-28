@@ -35,7 +35,9 @@ nonisolated struct DemoTransport: HTTPTransport {
         }
 
         let data = try JSONSerialization.data(withJSONObject: body)
-        let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"])
+        let response = HTTPURLResponse(
+            url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"]
+        )
         return (data, response ?? URLResponse())
     }
 

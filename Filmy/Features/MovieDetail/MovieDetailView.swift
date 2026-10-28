@@ -65,7 +65,8 @@ struct MovieDetailView: View {
 
     private func header(_ movie: Movie) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            StretchyBackdrop(movie: movie, height: horizontalSizeClass == .regular ? Self.regularBackdropHeight : Self.backdropHeight) { collapsed in
+            let backdropHeight = horizontalSizeClass == .regular ? Self.regularBackdropHeight : Self.backdropHeight
+            StretchyBackdrop(movie: movie, height: backdropHeight) { collapsed in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isPastBanner = collapsed
                 }

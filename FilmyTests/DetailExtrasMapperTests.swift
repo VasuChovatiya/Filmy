@@ -2,6 +2,9 @@ import Foundation
 import Testing
 @testable import Filmy
 
+// JSON fixtures stay one object per line.
+// swiftlint:disable line_length
+
 /// Videos, recommendations and watch providers, which arrive with the detail through
 /// `append_to_response`.
 struct DetailExtrasMapperTests {
@@ -122,3 +125,4 @@ struct DetailExtrasMapperTests {
         #expect(try Self.detail(Self.providers, region: "GB").watchOptions == nil)
     }
 }
+// swiftlint:enable line_length

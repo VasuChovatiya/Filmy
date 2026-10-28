@@ -77,7 +77,12 @@ nonisolated enum MovieMapper {
             genres: dto.genres.map(\.name),
             cast: Array(cast),
             videos: videos(from: dto.videos?.results ?? []),
-            recommendations: Array((dto.recommendations?.results ?? []).lazy.filter { $0.id != dto.id }.map(movie(from:)).prefix(maxRecommendations)),
+            recommendations: Array(
+                (dto.recommendations?.results ?? []).lazy
+                    .filter { $0.id != dto.id }
+                    .map(movie(from:))
+                    .prefix(maxRecommendations)
+            ),
             watchOptions: watchOptions(from: dto.watchProviders, region: region)
         )
     }

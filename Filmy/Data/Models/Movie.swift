@@ -116,10 +116,12 @@ nonisolated struct Video: Identifiable, Hashable, Sendable {
     }
 
     var watchURL: URL {
+        // swiftlint:disable:next force_unwrapping
         URL(string: "https://www.youtube.com/watch?v=\(id)")!
     }
 
     var thumbnailURL: URL {
+        // swiftlint:disable:next force_unwrapping
         URL(string: "https://i.ytimg.com/vi/\(id)/hqdefault.jpg")!
     }
 }

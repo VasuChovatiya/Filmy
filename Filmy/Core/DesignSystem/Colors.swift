@@ -26,7 +26,10 @@ enum PosterPalette {
         [Color(red: 0.36, green: 0.42, blue: 0.53), Color(red: 0.08, green: 0.09, blue: 0.14)],
     ]
 
-    static let symbols = ["film", "moon.stars.fill", "sparkles", "flame.fill", "wind", "bolt.fill", "leaf.fill", "airplane", "music.note", "star.fill", "theatermasks.fill"]
+    static let symbols = [
+        "film", "moon.stars.fill", "sparkles", "flame.fill", "wind", "bolt.fill",
+        "leaf.fill", "airplane", "music.note", "star.fill", "theatermasks.fill",
+    ]
 
     static func colors(for id: Int) -> [Color] {
         gradients[abs(id) % gradients.count]
