@@ -109,6 +109,12 @@ nonisolated struct Video: Identifiable, Hashable, Sendable {
     let kind: Kind
     let isOfficial: Bool
 
+    /// YouTube ids use only letters, digits, "-" and "_". The mapper drops any other key, which keeps
+    /// the URLs below valid.
+    static func isValidKey(_ key: String) -> Bool {
+        !key.isEmpty && key.unicodeScalars.allSatisfy { $0.isASCII && (CharacterSet.alphanumerics.contains($0) || $0 == "-" || $0 == "_") }
+    }
+
     var watchURL: URL {
         URL(string: "https://www.youtube.com/watch?v=\(id)")!
     }

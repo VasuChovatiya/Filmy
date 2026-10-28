@@ -38,6 +38,17 @@ struct DetailExtrasMapperTests {
         #expect(detail.trailer?.watchURL.absoluteString == "https://www.youtube.com/watch?v=new")
     }
 
+    @Test func videosWithKeysThatCannotFormAURLAreDropped() throws {
+        let detail = try Self.detail(#"""
+        "videos": {"results": [
+            {"key": "bad key/../x", "name": "Broken", "site": "YouTube", "type": "Trailer"},
+            {"key": "dQw4w9WgXcQ", "name": "Trailer", "site": "YouTube", "type": "Trailer"}
+        ]}
+        """#)
+
+        #expect(detail.videos.map(\.id) == ["dQw4w9WgXcQ"])
+    }
+
     @Test func teaserIsTheTrailerWhenThereIsNoTrailer() throws {
         let detail = try Self.detail(#"""
         "videos": {"results": [

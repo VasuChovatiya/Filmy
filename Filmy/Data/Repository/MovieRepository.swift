@@ -85,7 +85,7 @@ nonisolated enum MovieMapper {
     /// YouTube only (the app opens them there), ordered trailers first, official first, newest first.
     static func videos(from dtos: [VideoDTO]) -> [Video] {
         let sorted = dtos
-            .filter { $0.site == "YouTube" && !$0.key.isEmpty }
+            .filter { $0.site == "YouTube" && Video.isValidKey($0.key) }
             .map { (dto: $0, kind: Video.Kind(tmdbType: $0.type)) }
             .sorted { a, b in
                 if a.kind != b.kind { return a.kind < b.kind }
