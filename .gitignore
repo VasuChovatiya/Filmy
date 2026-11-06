@@ -28,5 +28,3 @@ Config/Secrets.xcconfig
 .build/
 .swiftpm/
 Package.resolved
-config.bat
-node_modules
